@@ -42,7 +42,13 @@ def get_topics():
     for index, link in enumerate(links):
         topic_link = link['href'].encode('utf-8')
         topic_name = link.contents[0].encode('utf-8')
-        number_of_entries_for_topic = int(link.contents[1].string)
+
+        if "," in link.contents[1].string:
+            splitted_count = link.contents[1].string.split(",")
+            number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
+        else:
+            number_of_entries_for_topic = int(link.contents[1].string)
+
         results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
 
     return results
