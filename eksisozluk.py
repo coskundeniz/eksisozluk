@@ -68,7 +68,7 @@ def get_entries_for_topic(topic_link, entry_count_per_topic):
 
     # open and parse page for given topic_link
     topic_page_content = parse_page(PAGE_URL + topic_link)
-    entry_list_container = topic_page_content.find('ul', {'id': 'entry-list'})
+    entry_list_container = topic_page_content.find('ul', {'id': 'entry-item-list'})
     entries_for_topic = entry_list_container.findAll('div', 'content')[:entry_count_per_topic]
 
     return [entry.text for entry in entries_for_topic]
