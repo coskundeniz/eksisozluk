@@ -69,9 +69,10 @@ def get_entries_for_topic(topic_link, entry_count_per_topic):
     # open and parse page for given topic_link
     topic_page_content = parse_page(PAGE_URL + topic_link)
     entry_list_container = topic_page_content.find('ul', {'id': 'entry-item-list'})
-    entries_for_topic = entry_list_container.findAll('div', 'content')[:entry_count_per_topic]
+    entries_for_topic = entry_list_container.findAll('div', 'content')[:entry_count_per_topic]    
+    authors = entry_list_container.findAll('a', {'class', 'entry-author'})[:entry_count_per_topic]
 
-    return [entry.text for entry in entries_for_topic]
+    return [(entry[0].text, entry[1].text) for entry in zip(entries_for_topic, authors)]
 
 
 def get_topics_sorted_by_entry_count(results):
@@ -167,7 +168,10 @@ def print_results(results):
         print "#" * len(topic_name)
 
         for index, entry in enumerate(topic_entries):
-            print "\n%2s - %s" % (index+1, entry.strip().encode('utf-8'))
+            entry_content = entry[0].strip().encode('utf-8')
+            entry_author = entry[1].encode('utf-8')
+
+            print "\n%2s - %s << %s >>" % (index+1, entry_content, entry_author)
             print "-" * 80
 
 
