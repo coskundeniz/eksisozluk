@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os.path
 from collections import defaultdict
 from argparse import ArgumentParser
 from urllib2 import urlopen
@@ -54,7 +55,7 @@ def get_topics():
     return results
 
 
-def get_entries_for_topic(topic_link, entry_count_per_topic):
+def get_entries_for_topic(topic_link, entry_count_per_topic=10):
     """Get last entries for a topic. Number of entries is ten by default, or
        less than ten as requested count per topic.
 
@@ -133,14 +134,53 @@ def get_entries_for_selected_topics(results, selected_topic_indexes, entry_count
     return selected_topic_entries
 
 
-def list_topics(print_top_ten=False):
+def add_to_favourite_topics(topic_links):
+    """Add selected topics to favourites
+
+    :type topic_links: list
+    :param topic_links: list of selected topics
+    """
+
+    filename = "favourite_topics.txt"
+
+    existing_topics = read_favourite_topics(filename)
+
+    with open(filename, "a") as favs:
+
+        for topic_link, topic_name in topic_links:
+            line = topic_link + "," + topic_name + "\n"
+            if line not in existing_topics:
+                favs.write(line)
+
+
+def read_favourite_topics(filename):
+    """Read favourite topics from file
+
+    :type filename: string
+    :param filename: File name
+    :rtype: list
+    :returns: List of favourite topics saved
+    """
+
+    favourite_topics = []
+
+    if (os.path.exists(filename)):
+
+        with open(filename, "r") as fav_topics_file:
+            for topic in fav_topics_file.readlines():
+                favourite_topics.append((topic.split(",")[0], topic.split(",")[1]))
+
+    return favourite_topics
+
+
+def list_topics(topic_results, print_top_ten=False):
     """Print currently popular topics
 
+    :type topic_results: list
+    :param topic_results: List of topics
     :type print_top_ten: bool
     :param print_top_ten: If True, print top ten entries according to entry count
     """
-
-    topic_results = get_topics()
 
     if print_top_ten:
         most_entry_topics = get_topics_sorted_by_entry_count(topic_results)
@@ -164,7 +204,7 @@ def print_results(results):
     for topic_name, topic_entries in results.iteritems():
 
         print "#" * len(topic_name)
-        print topic_name
+        print topic_name.rstrip()
         print "#" * len(topic_name)
 
         for index, entry in enumerate(topic_entries):
@@ -180,15 +220,38 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser()
     arg_parser.add_argument("-c", "--count", default=10, type=int, dest="entry_count_per_topic",
                             help="Number of entries for a topic to extract")
+    arg_parser.add_argument("-sf", "--fav", action='store_true', help="Add selected topics to favourites")
+    arg_parser.add_argument("-gf", "--getfavs", action='store_true', help="Get entries from favourite topics")
 
     args = arg_parser.parse_args()
     topic_results = get_topics()
 
-    list_topics(True)
+    if args.fav:
 
-    requested_topic_indexes = get_selected_topic_indexes()
-    requested_topic_entries = get_entries_for_selected_topics(topic_results,
-                                                              requested_topic_indexes,
-                                                              args.entry_count_per_topic)
+        list_topics(topic_results)
 
-    print_results(requested_topic_entries)
+        favourite_topic_indexes = get_selected_topic_indexes()
+
+        topics_selected = [(topic_results[index-1][1], topic_results[index-1][2]) for index in favourite_topic_indexes]
+        add_to_favourite_topics(topics_selected)
+    
+    elif args.getfavs:
+        
+        favourite_topic_entries = defaultdict(list)
+
+        favourite_topics = read_favourite_topics("favourite_topics.txt")
+
+        for topic_link, topic_name in favourite_topics:
+            favourite_topic_entries[topic_name] = get_entries_for_topic(topic_link)
+    
+        print_results(favourite_topic_entries)
+
+    else:
+        list_topics(topic_results, True)
+
+        requested_topic_indexes = get_selected_topic_indexes()
+        requested_topic_entries = get_entries_for_selected_topics(topic_results,
+                                                                  requested_topic_indexes,
+                                                                  args.entry_count_per_topic)
+
+        print_results(requested_topic_entries)

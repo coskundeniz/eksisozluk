@@ -7,7 +7,9 @@ Information
 -----------
 
 This script parses popular topics from eksisozluk.com, gets selected topics from user, and
-prints entries for selected topics. If "e" is entered, program ends. It was written with Python.
+prints entries for selected topics. Topics can be saved as favourite and entries from this
+topics can be read later.
+If "e" is entered, program ends. It was written with Python.
 
 Requirements
 ------------
@@ -18,3 +20,7 @@ Usage
 -----
 * `python eksisozluk.py`
 * `python eksisozluk.py -c number_of_entries_per_topic`
+* Save selected topics as favourite
+    * `python eksisozluk.py -sf`
+* Get entries from favourite topics saved
+    * `python eksisozluk.py -gf`
