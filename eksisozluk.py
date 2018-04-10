@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 
 
 PAGE_URL = 'https://eksisozluk.com'
+entry_counter = 0
+entry_index_map = {}
 
 
 def parse_page(page_url):
@@ -88,14 +90,14 @@ def get_topics_sorted_by_entry_count(results):
     return sorted(results, key=lambda x: x[3], reverse=True)[:10]
 
 
-def get_selected_topic_indexes():
-    """Get index of selected topics from user
+def get_selected_indexes():
+    """Get selected indexes from user
 
     :rtype: list
     :returns: list of indexes
     """
 
-    topic_indexes = raw_input("\nEnter requested topic indexes: ")
+    topic_indexes = raw_input("\nEnter requested indexes: ")
 
     if topic_indexes == "e":
         sys.exit(1)
@@ -173,6 +175,23 @@ def read_favourite_topics(filename):
     return favourite_topics
 
 
+def add_to_favourite_entries(entry_indexes):
+    """Save selected entries to a file
+
+    :type entry_indexes: list
+    :param entry_indexes: list of selected entry indexes
+    """
+
+    filename = "favourite_entries.txt"
+
+    with open(filename, "a") as favourite_entries:
+
+        for index in entry_indexes:
+            favourite_entries.write("%s << %s >>\n%s\n\n" % (entry_index_map[str(index)][0], entry_index_map[str(index)][1], "-"*100))
+
+    print "Selected entries were added to %s" % filename
+
+
 def list_topics(topic_results, print_top_ten=False):
     """Print currently popular topics
 
@@ -194,11 +213,45 @@ def list_topics(topic_results, print_top_ten=False):
         print t_index, t_name
 
 
-def print_results(results):
+def get_entry_counter():
+    """Get counter to enumerate entries
+
+    :rtype: integer
+    :returns: Index for the next entry
+    """
+
+    global entry_counter
+
+    entry_counter += 1
+
+    return entry_counter
+
+
+def update_entry_index_map(entry_index, entry_content, entry_author):
+    """Update entry index map with the following item format
+
+    index: (entry_content, entry_author)
+
+    :type entry_index: integer
+    :param entry_index: Index of entry
+    :type entry_content: string
+    :param entry_content: Text content of entry
+    :type entry_author: string
+    :param entry_author: Author of entry
+    """
+    
+    global entry_index_map
+
+    entry_index_map.update({str(entry_index): (entry_content, entry_author)})
+
+
+def print_results(results, save_favourite_entries=False):
     """Print entries for selected topics
 
     :type results: dictionary
     :param results: entries for selected topics as name: entry_list dict
+    :type save_favourite_entries: bool
+    :param save_favourite_entries: Whether selected entries will be saved or not
     """
 
     for topic_name, topic_entries in results.iteritems():
@@ -211,7 +264,14 @@ def print_results(results):
             entry_content = entry[0].strip().encode('utf-8')
             entry_author = entry[1].encode('utf-8')
 
-            print "\n%2s - %s << %s >>" % (index+1, entry_content, entry_author)
+            if save_favourite_entries:
+                entry_index = get_entry_counter()
+                update_entry_index_map(entry_index, entry_content, entry_author)
+
+                print "\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index)
+            else:
+                print "\n%2s - %s << %s >>" % (index+1, entry_content, entry_author)
+            
             print "-" * 80
 
 
@@ -222,6 +282,7 @@ if __name__ == '__main__':
                             help="Number of entries for a topic to extract")
     arg_parser.add_argument("-sf", "--fav", action='store_true', help="Add selected topics to favourites")
     arg_parser.add_argument("-gf", "--getfavs", action='store_true', help="Get entries from favourite topics")
+    arg_parser.add_argument("-se", "--faventry", action='store_true', help="Add selected entries to favourites")
 
     args = arg_parser.parse_args()
     topic_results = get_topics()
@@ -230,7 +291,7 @@ if __name__ == '__main__':
 
         list_topics(topic_results)
 
-        favourite_topic_indexes = get_selected_topic_indexes()
+        favourite_topic_indexes = get_selected_indexes()
 
         topics_selected = [(topic_results[index-1][1], topic_results[index-1][2]) for index in favourite_topic_indexes]
         add_to_favourite_topics(topics_selected)
@@ -247,11 +308,20 @@ if __name__ == '__main__':
         print_results(favourite_topic_entries)
 
     else:
+
         list_topics(topic_results, True)
 
-        requested_topic_indexes = get_selected_topic_indexes()
+        requested_topic_indexes = get_selected_indexes()
         requested_topic_entries = get_entries_for_selected_topics(topic_results,
                                                                   requested_topic_indexes,
                                                                   args.entry_count_per_topic)
 
-        print_results(requested_topic_entries)
+        if args.faventry:
+            
+            print_results(requested_topic_entries, True)
+            entry_indexes_to_save = get_selected_indexes()
+            add_to_favourite_entries(entry_indexes_to_save)
+
+        else:
+            print_results(requested_topic_entries)
+
