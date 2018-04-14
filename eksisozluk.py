@@ -187,7 +187,10 @@ def add_to_favourite_entries(entry_indexes):
     with open(filename, "a") as favourite_entries:
 
         for index in entry_indexes:
-            favourite_entries.write("%s << %s >>\n%s\n\n" % (entry_index_map[str(index)][0], entry_index_map[str(index)][1], "-"*100))
+            favourite_entries.write("::: %s ::: %s << %s >>\n%s\n\n" % (entry_index_map[str(index)][2],
+                                                                        entry_index_map[str(index)][0], 
+                                                                        entry_index_map[str(index)][1], 
+                                                                        "-"*100))
 
     print "Selected entries were added to %s" % filename
 
@@ -227,10 +230,10 @@ def get_entry_counter():
     return entry_counter
 
 
-def update_entry_index_map(entry_index, entry_content, entry_author):
+def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic):
     """Update entry index map with the following item format
 
-    index: (entry_content, entry_author)
+    index: (entry_content, entry_author, entry_topic)
 
     :type entry_index: integer
     :param entry_index: Index of entry
@@ -242,7 +245,7 @@ def update_entry_index_map(entry_index, entry_content, entry_author):
     
     global entry_index_map
 
-    entry_index_map.update({str(entry_index): (entry_content, entry_author)})
+    entry_index_map.update({str(entry_index): (entry_content, entry_author, entry_topic)})
 
 
 def print_results(results, save_favourite_entries=False):
@@ -266,7 +269,7 @@ def print_results(results, save_favourite_entries=False):
 
             if save_favourite_entries:
                 entry_index = get_entry_counter()
-                update_entry_index_map(entry_index, entry_content, entry_author)
+                update_entry_index_map(entry_index, entry_content, entry_author, topic_name.rstrip())
 
                 print "\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index)
             else:
