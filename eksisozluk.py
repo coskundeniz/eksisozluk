@@ -241,6 +241,8 @@ def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic
     :param entry_content: Text content of entry
     :type entry_author: string
     :param entry_author: Author of entry
+    :type entry_topic: string
+    :param entry_topic: Topic of entry
     """
     
     global entry_index_map
