@@ -14,7 +14,7 @@ If "e" is entered, program ends. It was written with Python.
 Requirements
 ------------
 
-* BeautifulSoup module `pip install beautifulsoup4`
+* pip install -r requirements.txt 
 
 Usage
 -----

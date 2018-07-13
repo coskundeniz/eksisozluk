@@ -6,7 +6,12 @@ import os.path
 from collections import defaultdict
 from argparse import ArgumentParser
 from urllib2 import urlopen
-from bs4 import BeautifulSoup
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    print "BeautifulSoup module is required. Please run 'pip install -r requirements.txt'"
+    sys.exit(1)
 
 
 PAGE_URL = 'https://eksisozluk.com'
