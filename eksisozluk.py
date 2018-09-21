@@ -48,16 +48,22 @@ def get_topics():
     links = topic_list('a')
 
     for index, link in enumerate(links):
-        topic_link = link['href'].encode('utf-8')
-        topic_name = link.contents[0].encode('utf-8')
 
-        if "," in link.contents[1].string:
-            splitted_count = link.contents[1].string.split(",")
-            number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
-        else:
-            number_of_entries_for_topic = int(link.contents[1].string)
+        try:
+            topic_link = link['href'].encode('utf-8')
+            topic_name = link.contents[0].encode('utf-8')
 
-        results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
+            #print link.contents
+
+            if "," in link.contents[1].string:
+                splitted_count = link.contents[1].string.split(",")
+                number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
+            else:
+                number_of_entries_for_topic = int(link.contents[1].string)
+
+            results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
+        except KeyError:
+            pass
 
     return results
 
@@ -77,7 +83,7 @@ def get_entries_for_topic(topic_link, entry_count_per_topic=10):
     # open and parse page for given topic_link
     topic_page_content = parse_page(PAGE_URL + topic_link)
     entry_list_container = topic_page_content.find('ul', {'id': 'entry-item-list'})
-    entries_for_topic = entry_list_container.findAll('div', 'content')[:entry_count_per_topic]    
+    entries_for_topic = entry_list_container.findAll('div', 'content')[:entry_count_per_topic]
     authors = entry_list_container.findAll('a', {'class', 'entry-author'})[:entry_count_per_topic]
 
     return [(entry[0].text, entry[1].text) for entry in zip(entries_for_topic, authors)]
@@ -193,8 +199,8 @@ def add_to_favourite_entries(entry_indexes):
 
         for index in entry_indexes:
             favourite_entries.write("::: %s ::: %s << %s >>\n%s\n\n" % (entry_index_map[str(index)][2],
-                                                                        entry_index_map[str(index)][0], 
-                                                                        entry_index_map[str(index)][1], 
+                                                                        entry_index_map[str(index)][0],
+                                                                        entry_index_map[str(index)][1],
                                                                         "-"*100))
 
     print "Selected entries were added to %s" % filename
@@ -249,7 +255,7 @@ def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic
     :type entry_topic: string
     :param entry_topic: Topic of entry
     """
-    
+
     global entry_index_map
 
     entry_index_map.update({str(entry_index): (entry_content, entry_author, entry_topic)})
@@ -281,7 +287,7 @@ def print_results(results, save_favourite_entries=False):
                 print "\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index)
             else:
                 print "\n%2s - %s << %s >>" % (index+1, entry_content, entry_author)
-            
+
             print "-" * 80
 
 
@@ -305,16 +311,16 @@ if __name__ == '__main__':
 
         topics_selected = [(topic_results[index-1][1], topic_results[index-1][2]) for index in favourite_topic_indexes]
         add_to_favourite_topics(topics_selected)
-    
+
     elif args.getfavs:
-        
+
         favourite_topic_entries = defaultdict(list)
 
         favourite_topics = read_favourite_topics("favourite_topics.txt")
 
         for topic_link, topic_name in favourite_topics:
             favourite_topic_entries[topic_name] = get_entries_for_topic(topic_link)
-    
+
         print_results(favourite_topic_entries)
 
     else:
@@ -327,7 +333,7 @@ if __name__ == '__main__':
                                                                   args.entry_count_per_topic)
 
         if args.faventry:
-            
+
             print_results(requested_topic_entries, True)
             entry_indexes_to_save = get_selected_indexes()
             add_to_favourite_entries(entry_indexes_to_save)
