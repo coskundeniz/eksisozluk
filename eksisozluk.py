@@ -113,7 +113,7 @@ def get_selected_indexes():
     if topic_indexes == "e":
         sys.exit(1)
 
-    selected_topic_indexes = [int(index) for index in list(topic_indexes.split())
+    selected_topic_indexes = [int(index) for index in topic_indexes.split()
                                          if index.isdigit()]
 
     return selected_topic_indexes
