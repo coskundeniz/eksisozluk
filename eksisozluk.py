@@ -1,16 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import sys
+
+if sys.version_info.major < 3:
+    print("Use python3 to run the script!")
+    sys.exit(1)
+
 import os.path
 from collections import defaultdict
 from argparse import ArgumentParser
-from urllib2 import urlopen
+from urllib.request import urlopen
 
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    print "BeautifulSoup module is required. Please run 'pip install -r requirements.txt'"
+    print("BeautifulSoup module is required. Please run 'pip install -r requirements.txt'")
     sys.exit(1)
 
 
@@ -50,10 +52,8 @@ def get_topics():
     for index, link in enumerate(links):
 
         try:
-            topic_link = link['href'].encode('utf-8')
-            topic_name = link.contents[0].encode('utf-8')
-
-            #print link.contents
+            topic_link = link['href']
+            topic_name = link.contents[0]
 
             if "," in link.contents[1].string:
                 splitted_count = link.contents[1].string.split(",")
@@ -108,7 +108,7 @@ def get_selected_indexes():
     :returns: list of indexes
     """
 
-    topic_indexes = raw_input("\nEnter requested indexes: ")
+    topic_indexes = input("\nEnter requested indexes: ")
 
     if topic_indexes == "e":
         sys.exit(1)
@@ -203,7 +203,7 @@ def add_to_favourite_entries(entry_indexes):
                                                                         entry_index_map[str(index)][1],
                                                                         "-"*100))
 
-    print "Selected entries were added to %s" % filename
+    print("Selected entries were added to %s" % filename)
 
 
 def list_topics(topic_results, print_top_ten=False):
@@ -218,13 +218,12 @@ def list_topics(topic_results, print_top_ten=False):
     if print_top_ten:
         most_entry_topics = get_topics_sorted_by_entry_count(topic_results)
 
-        print
         for index, (t_index, t_link, t_name, t_entry_count) in enumerate(most_entry_topics):
-            print index+1, t_name, t_entry_count
+            print(index+1, t_name, t_entry_count)
 
-    print
+    print()
     for (t_index, t_link, t_name, t_entry_count) in topic_results:
-        print t_index, t_name
+        print(t_index, t_name)
 
 
 def get_entry_counter():
@@ -270,25 +269,25 @@ def print_results(results, save_favourite_entries=False):
     :param save_favourite_entries: Whether selected entries will be saved or not
     """
 
-    for topic_name, topic_entries in results.iteritems():
+    for topic_name, topic_entries in results.items():
 
-        print "#" * len(topic_name)
-        print topic_name.rstrip()
-        print "#" * len(topic_name)
+        print("#" * len(topic_name))
+        print(topic_name.rstrip())
+        print("#" * len(topic_name))
 
         for index, entry in enumerate(topic_entries):
-            entry_content = entry[0].strip().encode('utf-8')
-            entry_author = entry[1].encode('utf-8')
+            entry_content = entry[0].strip()
+            entry_author = entry[1]
 
             if save_favourite_entries:
                 entry_index = get_entry_counter()
                 update_entry_index_map(entry_index, entry_content, entry_author, topic_name.rstrip())
 
-                print "\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index)
+                print("\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index))
             else:
-                print "\n%2s - %s << %s >>" % (index+1, entry_content, entry_author)
+                print("\n%2s - %s << %s >>" % (index+1, entry_content, entry_author))
 
-            print "-" * 80
+            print("-" * 80)
 
 
 if __name__ == '__main__':

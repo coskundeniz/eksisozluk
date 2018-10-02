@@ -9,7 +9,7 @@ Information
 This script parses popular topics from eksisozluk.com, gets selected topics from user, and
 prints entries for selected topics. Topics can be saved as favourite and entries from this
 topics can be read later. Also selected entries can be saved.
-If "e" is entered, program ends. It was written with Python.
+If "e" is entered, program ends. It was written with Python3.
 
 Requirements
 ------------
