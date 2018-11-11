@@ -174,19 +174,16 @@ def read_favourite_topics(filename):
 
     :type filename: string
     :param filename: File name
-    :rtype: list
+    :rtype: generator
     :returns: List of favourite topics saved
     """
 
-    favourite_topics = []
-
     if (os.path.exists(filename)):
-
         with open(filename, "r") as fav_topics_file:
             for topic in fav_topics_file.readlines():
-                favourite_topics.append((topic.split(",")[0], topic.split(",")[1]))
-
-    return favourite_topics
+                yield (topic.split(",")[0], topic.split(",")[1])
+    else:
+        print("There is no topic saved to favourites!")
 
 
 def add_to_favourite_entries(entry_indexes):
@@ -330,7 +327,12 @@ def print_results(results, save_favourite_entries=False):
             print("-" * 80)
 
 
-if __name__ == '__main__':
+def get_arg_parser():
+    """Get argument parser
+    
+    :rtype: ArgumentParser
+    :returns: ArgumentParser object
+    """
 
     arg_parser = ArgumentParser()
     arg_parser.add_argument("-c", "--count", default=10, type=int, dest="entry_count_per_topic",
@@ -344,6 +346,12 @@ if __name__ == '__main__':
     arg_parser.add_argument("-t", "--titles", action='store_true',
                             help="Get topics from other titles")
 
+    return arg_parser
+
+
+if __name__ == '__main__':
+
+    arg_parser = get_arg_parser()
     args = arg_parser.parse_args()
 
     if args.titles:
