@@ -17,7 +17,6 @@ except ImportError:
 
 
 PAGE_URL = 'https://eksisozluk.com'
-entry_counter = 0
 entry_index_map = {}
 
 
@@ -34,18 +33,24 @@ def parse_page(page_url):
     return parsed_page
 
 
-def get_topics():
+def get_topics(url=None):
     """Get list of popular topics
 
+    :type url: string
+    :param url: url of the page to be parsed. If called without url
+    main url is opened.
     :rtype: list
     :returns: list of extracted results that contains a tuple for each topic
     """
 
     results = []
 
-    parsed_page = parse_page(PAGE_URL)
+    parsed_page = parse_page(PAGE_URL) if url is None else parse_page(url)
 
-    topic_list = parsed_page.find('ul', 'topic-list partial')
+    if url:
+        topic_list = parsed_page.select('section#content-body ul.topic-list')[0]
+    else:
+        topic_list = parsed_page.find('ul', 'topic-list partial')
 
     links = topic_list('a')
 
@@ -55,13 +60,16 @@ def get_topics():
             topic_link = link['href']
             topic_name = link.contents[0]
 
-            if "," in link.contents[1].string:
-                splitted_count = link.contents[1].string.split(",")
-                number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
-            else:
-                number_of_entries_for_topic = int(link.contents[1].string)
+            if len(link.contents) == 2:  # [topic_name, entry_count]
+                if "," in link.contents[1].string:
+                    splitted_count = link.contents[1].string.split(",")
+                    number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
+                else:
+                    number_of_entries_for_topic = int(link.contents[1].string)
 
-            results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
+                results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
+            else:  # [topic_name]
+                results.append((index+1, topic_link, topic_name, 0))
         except KeyError:
             pass
 
@@ -110,11 +118,8 @@ def get_selected_indexes():
 
     topic_indexes = input("\nEnter requested indexes: ")
 
-    if topic_indexes == "e":
-        sys.exit(1)
-
     selected_topic_indexes = [int(index) for index in topic_indexes.split()
-                                         if index.isdigit()]
+                                            if index.isdigit()]
 
     return selected_topic_indexes
 
@@ -132,7 +137,6 @@ def get_entries_for_selected_topics(results, selected_topic_indexes, entry_count
     :returns: entries for selected topics as name: entry_list pairs
     """
 
-    selected_topic_links = []
     selected_topic_entries = defaultdict(list)
 
     for topic_index in selected_topic_indexes:
@@ -141,7 +145,6 @@ def get_entries_for_selected_topics(results, selected_topic_indexes, entry_count
                 topic_link = topic_result[1]
                 topic_name = topic_result[2]
 
-                selected_topic_links.append(topic_link)
                 selected_topic_entries[topic_name] = get_entries_for_topic(topic_link, entry_count_per_topic)
 
     return selected_topic_entries
@@ -226,20 +229,6 @@ def list_topics(topic_results, print_top_ten=False):
         print(t_index, t_name)
 
 
-def get_entry_counter():
-    """Get counter to enumerate entries
-
-    :rtype: integer
-    :returns: Index for the next entry
-    """
-
-    global entry_counter
-
-    entry_counter += 1
-
-    return entry_counter
-
-
 def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic):
     """Update entry index map with the following item format
 
@@ -259,6 +248,50 @@ def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic
 
     entry_index_map.update({str(entry_index): (entry_content, entry_author, entry_topic)})
 
+def get_all_titles():
+    """Get all titles
+
+    :rtype: dictionary
+    :returns: titles as index: link pairs
+    """
+
+    parsed_page = parse_page(PAGE_URL)
+
+    titles = parsed_page.select('a[href^="/basliklar/kanal"]')
+
+    indexed_titles = {index+1: (title.getText(), title.get("href"))
+                                for index, title in enumerate(titles)}
+
+    return indexed_titles
+
+
+def get_selected_title(titles):
+    """List titles, and get the selected title link
+
+    :type titles: dictionary
+    :param titles: indexed titles
+    :rtype: string
+    :returns: relative link of selected title
+    """
+
+    for index, title_info in titles.items():
+        print("{:2} - {:13}".format(index, title_info[0]), end=' ')
+        if index % 4 == 0:
+            print()
+
+    try:
+        selected = int(input("\nSelect a title: "))
+
+        if selected <= 0 or selected > len(titles):
+            raise ValueError
+    except ValueError:
+        print("Invalid index!")
+        sys.exit(1)
+
+    title_link = titles[selected][1]
+
+    return title_link
+
 
 def print_results(results, save_favourite_entries=False):
     """Print entries for selected topics
@@ -268,6 +301,13 @@ def print_results(results, save_favourite_entries=False):
     :type save_favourite_entries: bool
     :param save_favourite_entries: Whether selected entries will be saved or not
     """
+
+    if save_favourite_entries:
+        num_of_total_entries = 0
+        for name, t_entries in results.items():
+            num_of_total_entries += len(t_entries)
+
+        entry_counter = (n+1 for n in range(num_of_total_entries))
 
     for topic_name, topic_entries in results.items():
 
@@ -280,7 +320,7 @@ def print_results(results, save_favourite_entries=False):
             entry_author = entry[1]
 
             if save_favourite_entries:
-                entry_index = get_entry_counter()
+                entry_index = next(entry_counter)
                 update_entry_index_map(entry_index, entry_content, entry_author, topic_name.rstrip())
 
                 print("\n%2s - %s << %s >> [%s]" % (index+1, entry_content, entry_author, entry_index))
@@ -295,12 +335,25 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser()
     arg_parser.add_argument("-c", "--count", default=10, type=int, dest="entry_count_per_topic",
                             help="Number of entries for a topic to extract")
-    arg_parser.add_argument("-sf", "--fav", action='store_true', help="Add selected topics to favourites")
-    arg_parser.add_argument("-gf", "--getfavs", action='store_true', help="Get entries from favourite topics")
-    arg_parser.add_argument("-se", "--faventry", action='store_true', help="Add selected entries to favourites")
+    arg_parser.add_argument("-sf", "--fav", action='store_true',
+                            help="Add selected topics to favourites")
+    arg_parser.add_argument("-gf", "--getfavs", action='store_true',
+                            help="Get entries from favourite topics")
+    arg_parser.add_argument("-se", "--faventry", action='store_true',
+                            help="Add selected entries to favourites")
+    arg_parser.add_argument("-t", "--titles", action='store_true',
+                            help="Get topics from other titles")
 
     args = arg_parser.parse_args()
-    topic_results = get_topics()
+
+    if args.titles:
+        titles = get_all_titles()
+        selected_title = get_selected_title(titles)
+        title_url = PAGE_URL + selected_title
+
+        topic_results = get_topics(url=title_url)
+    else:
+        topic_results = get_topics()
 
     if args.fav:
 
@@ -308,7 +361,8 @@ if __name__ == '__main__':
 
         favourite_topic_indexes = get_selected_indexes()
 
-        topics_selected = [(topic_results[index-1][1], topic_results[index-1][2]) for index in favourite_topic_indexes]
+        topics_selected = [(topic_results[index-1][1], topic_results[index-1][2])
+                            for index in favourite_topic_indexes]
         add_to_favourite_topics(topics_selected)
 
     elif args.getfavs:
@@ -339,4 +393,3 @@ if __name__ == '__main__':
 
         else:
             print_results(requested_topic_entries)
-
