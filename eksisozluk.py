@@ -157,7 +157,7 @@ def get_entries_for_selected_topics(results, selected_topic_indexes, entry_count
     for topic_index in selected_topic_indexes:
         for topic in results:
             if topic_index == topic.index:
-                topic_entries = get_entries_for_topic(topic.link, topic.entry_count)
+                topic_entries = get_entries_for_topic(topic.link, entry_count_per_topic)
                 selected_topic_entries[topic.name] = topic_entries
 
     return selected_topic_entries
