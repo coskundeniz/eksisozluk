@@ -4,10 +4,10 @@ if sys.version_info.major < 3:
     print("Use python3 to run the script!")
     sys.exit(1)
 
-import os.path
-from collections import defaultdict
 from argparse import ArgumentParser
+from collections import defaultdict, namedtuple
 from urllib.request import urlopen
+from os import path
 
 try:
     from bs4 import BeautifulSoup
@@ -43,6 +43,7 @@ def get_topics(url=None):
     :returns: list of extracted results that contains a tuple for each topic
     """
 
+    Topic = namedtuple('Topic', 'index, link, name, entry_count')
     results = []
 
     parsed_page = parse_page(PAGE_URL) if url is None else parse_page(url)
@@ -63,13 +64,23 @@ def get_topics(url=None):
             if len(link.contents) == 2:  # [topic_name, entry_count]
                 if "," in link.contents[1].string:
                     splitted_count = link.contents[1].string.split(",")
-                    number_of_entries_for_topic = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
+                    topic_entry_count = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
                 else:
-                    number_of_entries_for_topic = int(link.contents[1].string)
+                    topic_entry_count = int(link.contents[1].string)
 
-                results.append((index+1, topic_link, topic_name, number_of_entries_for_topic))
+                topic = Topic(index=index+1,
+                            link=topic_link,
+                            name=topic_name,
+                            entry_count=topic_entry_count)
+                results.append(topic)
             else:  # [topic_name]
-                results.append((index+1, topic_link, topic_name, 0))
+                topic = Topic(index=index+1,
+                            link=topic_link,
+                            name=topic_name,
+                            entry_count=0)
+
+                results.append(topic)
+
         except KeyError:
             pass
 
@@ -106,7 +117,7 @@ def get_topics_sorted_by_entry_count(results):
     :returns: list of topics sorted by entry count
     """
 
-    return sorted(results, key=lambda x: x[3], reverse=True)[:10]
+    return sorted(results, key=lambda x: x.entry_count, reverse=True)[:10]
 
 
 def get_selected_indexes():
@@ -120,6 +131,10 @@ def get_selected_indexes():
 
     selected_topic_indexes = [int(index) for index in topic_indexes.split()
                                             if index.isdigit()]
+
+    if not selected_topic_indexes:
+        print("\nNo index selected!")
+        sys.exit(1)
 
     return selected_topic_indexes
 
@@ -140,12 +155,10 @@ def get_entries_for_selected_topics(results, selected_topic_indexes, entry_count
     selected_topic_entries = defaultdict(list)
 
     for topic_index in selected_topic_indexes:
-        for topic_result in results:
-            if topic_index == topic_result[0]:
-                topic_link = topic_result[1]
-                topic_name = topic_result[2]
-
-                selected_topic_entries[topic_name] = get_entries_for_topic(topic_link, entry_count_per_topic)
+        for topic in results:
+            if topic_index == topic.index:
+                topic_entries = get_entries_for_topic(topic.link, topic.entry_count)
+                selected_topic_entries[topic.name] = topic_entries
 
     return selected_topic_entries
 
@@ -178,7 +191,7 @@ def read_favourite_topics(filename):
     :returns: List of favourite topics saved
     """
 
-    if (os.path.exists(filename)):
+    if path.exists(filename):
         with open(filename, "r") as fav_topics_file:
             for topic in fav_topics_file.readlines():
                 yield (topic.split(",")[0], topic.split(",")[1])
@@ -218,12 +231,12 @@ def list_topics(topic_results, print_top_ten=False):
     if print_top_ten:
         most_entry_topics = get_topics_sorted_by_entry_count(topic_results)
 
-        for index, (t_index, t_link, t_name, t_entry_count) in enumerate(most_entry_topics):
-            print(index+1, t_name, t_entry_count)
+        for index, top_topic in enumerate(most_entry_topics):
+            print(index+1, top_topic.name, top_topic.entry_count)
 
     print()
-    for (t_index, t_link, t_name, t_entry_count) in topic_results:
-        print(t_index, t_name)
+    for result in topic_results:
+        print(result.index, result.name)
 
 
 def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic):
@@ -244,6 +257,7 @@ def update_entry_index_map(entry_index, entry_content, entry_author, entry_topic
     global entry_index_map
 
     entry_index_map.update({str(entry_index): (entry_content, entry_author, entry_topic)})
+
 
 def get_all_titles():
     """Get all titles
@@ -329,7 +343,7 @@ def print_results(results, save_favourite_entries=False):
 
 def get_arg_parser():
     """Get argument parser
-    
+
     :rtype: ArgumentParser
     :returns: ArgumentParser object
     """
@@ -369,7 +383,7 @@ if __name__ == '__main__':
 
         favourite_topic_indexes = get_selected_indexes()
 
-        topics_selected = [(topic_results[index-1][1], topic_results[index-1][2])
+        topics_selected = [(topic_results[index-1].name, topic_results[index-1].link)
                             for index in favourite_topic_indexes]
         add_to_favourite_topics(topics_selected)
 
@@ -379,14 +393,14 @@ if __name__ == '__main__':
 
         favourite_topics = read_favourite_topics("favourite_topics.txt")
 
-        for topic_link, topic_name in favourite_topics:
+        for topic_name, topic_link in favourite_topics:
             favourite_topic_entries[topic_name] = get_entries_for_topic(topic_link)
 
         print_results(favourite_topic_entries)
 
     else:
 
-        list_topics(topic_results, True)
+        list_topics(topic_results, print_top_ten=True)
 
         requested_topic_indexes = get_selected_indexes()
         requested_topic_entries = get_entries_for_selected_topics(topic_results,
@@ -395,7 +409,7 @@ if __name__ == '__main__':
 
         if args.faventry:
 
-            print_results(requested_topic_entries, True)
+            print_results(requested_topic_entries, save_favourite_entries=True)
             entry_indexes_to_save = get_selected_indexes()
             add_to_favourite_entries(entry_indexes_to_save)
 
