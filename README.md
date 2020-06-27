@@ -13,6 +13,9 @@ topics can be read later. Also selected entries can be saved. It was written wit
 Requirements
 ------------
 
+Run one of the followings
+
+* pipenv install
 * pip install -r requirements.txt 
 
 Usage

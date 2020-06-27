@@ -1,18 +1,13 @@
 import sys
-
-if sys.version_info.major < 3:
-    print("Use python3 to run the script!")
-    sys.exit(1)
-
-from argparse import ArgumentParser
-from collections import defaultdict, namedtuple
-from urllib.request import urlopen
 from os import path
+from argparse import ArgumentParser
+from urllib.request import urlopen
+from collections import defaultdict, namedtuple
 
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    print("BeautifulSoup module is required. Please run 'pip install -r requirements.txt'")
+    print("Please run 'pipenv install' or 'pip install -r requirements.txt'")
     sys.exit(1)
 
 
