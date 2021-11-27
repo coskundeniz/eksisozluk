@@ -6,5 +6,11 @@ name = "pypi"
 [packages]
 beautifulsoup4 = "*"
 bs4 = "*"
-lxml = "*"
+certifi = "*"
+charset-normalizer = "*"
+idna = "*"
+requests = "*"
+urllib3 = "*"
+
+[dev-packages]
 
