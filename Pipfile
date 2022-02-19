@@ -6,11 +6,11 @@ name = "pypi"
 [packages]
 beautifulsoup4 = "*"
 bs4 = "*"
-certifi = "*"
-charset-normalizer = "*"
-idna = "*"
+pymongo = "*"
 requests = "*"
-urllib3 = "*"
+rich = "*"
+selenium = "*"
+webdriver-setup = "*"
 
 [dev-packages]
 
