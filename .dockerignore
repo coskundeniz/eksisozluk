@@ -1,0 +1,10 @@
+env/
+images/
+__pycache__/
+
+.git
+.cache
+
+*.md
+
+*.db

@@ -230,7 +230,7 @@ def handle_a_tag(element: bs4.element.Tag) -> str:
 def create_driver() -> selenium.webdriver:
     """Create browser driver
 
-    Firefox is tried first. If it fails, Chrome is tried.
+    Chrome is tried first. If it fails, Firefox is tried.
 
     :rtype: selenium.webdriver
     :returns: Selenium webdriver instance
@@ -239,17 +239,17 @@ def create_driver() -> selenium.webdriver:
     os.environ["WDM_LOG_LEVEL"] = "0"
 
     try:
-        firefox_options = FirefoxOptions()
-        firefox_options.add_argument("--headless")
-        driver = get_webdriver_for("firefox", options=firefox_options)
-
-    except WebDriverException:
         chrome_options = ChromeOptions()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-dev-shm-usage")
         driver = get_webdriver_for("chrome", options=chrome_options)
+
+    except WebDriverException:
+        firefox_options = FirefoxOptions()
+        firefox_options.add_argument("--headless")
+        driver = get_webdriver_for("firefox", options=firefox_options)
 
     return driver
 

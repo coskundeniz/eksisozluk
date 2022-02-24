@@ -14,6 +14,7 @@ A command line reader for https://eksisozluk.com/
 * Show entries saved as favourite
 * Change console output theme
 
+---
 
 ## How to setup
 
@@ -31,6 +32,15 @@ Run one of the followings to install required packages
 * `pip install -r requirements.txt`
 
 
+### How to create Docker image manually
+
+Install docker from [here](https://docs.docker.com/get-docker/) and run the following commands in the project directory.
+
+* `docker build -t eksisozluk .`
+* `docker volume create eksisozluk_db`
+
+---
+
 ## How to use
 
 ```
@@ -46,6 +56,24 @@ optional arguments:
   -lfe, --listfaventry       Show entries saved as favourite
   -th THEME, --theme THEME   Change theme
 ```
+
+### How to run Docker image
+
+If you created the image manually according to above commands, run the following command.
+
+* `docker run --rm -it -v eksisozluk_db:/src eksisozluk`
+
+You can add options as normal.
+
+* `docker run --rm -it -v eksisozluk_db:/src eksisozluk -ch -fe`
+
+If you want to use prebuilt image from DockerHub, you can use the following commands.
+
+* `docker pull codenineeight/eksisozluk`
+
+* `docker run --rm -it -v eksisozluk_db:/src codenineeight/eksisozluk`
+
+---
 
 ## Screenshots
 
