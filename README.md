@@ -17,7 +17,8 @@ A command line reader for https://eksisozluk.com/
 
 ## How to setup
 
-Saving titles/entries requires MongoDB. Install it from [here](https://docs.mongodb.com/manual/administration/install-community/).
+If you will use MongoDB to save titles/entries, install it from [here](https://docs.mongodb.com/manual/administration/install-community/).
+Otherwise SQLite database will be used.
 
 You can check the running status after installation and start the database server with the following commands on Linux.
 
