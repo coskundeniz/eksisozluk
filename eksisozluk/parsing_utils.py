@@ -1,5 +1,7 @@
 import os
+import sys
 import random
+from pathlib import Path
 from typing import Optional, Union
 
 import bs4
@@ -13,20 +15,20 @@ from selenium.common.exceptions import (
     TimeoutException,
     NoSuchElementException,
     ElementNotInteractableException,
-    WebDriverException,
 )
-from selenium.webdriver import FirefoxOptions, ChromeOptions
-from webdriver_setup import get_webdriver_for
+import undetected_chromedriver
 
 from eksisozluk.constants import PAGE_URL, USER_AGENT_LIST
 from eksisozluk.exceptions import EksiReaderPageRequestError
 
 
-def parse_page(url: str, timeout: float = 3.0) -> BeautifulSoup:
+def parse_page(url: str, timeout: Optional[float] = 3.0) -> BeautifulSoup:
     """Open and parse page content
 
     :type url: str
     :param url: url of the page to be parsed
+    :type timeout: float
+    :param timeout: Request timeout
     :rtype: BeautifulSoup
     :returns: BeautifulSoup object
     """
@@ -51,9 +53,7 @@ def parse_page(url: str, timeout: float = 3.0) -> BeautifulSoup:
     return parsed_page
 
 
-def find_element_with_id(
-    element_id: str, content: bs4.element.Tag
-) -> Optional[bs4.element.Tag]:
+def find_element_with_id(element_id: str, content: bs4.element.Tag) -> Optional[bs4.element.Tag]:
     """Find element with given id
 
     :type element_id: str
@@ -125,9 +125,7 @@ def select_first_element(
     return element
 
 
-def select_all_elements(
-    element_class: str, content: bs4.element.Tag
-) -> bs4.element.ResultSet:
+def select_all_elements(element_class: str, content: bs4.element.Tag) -> bs4.element.ResultSet:
     """Select all elements with given class
 
     :type element_class: str
@@ -227,36 +225,72 @@ def handle_a_tag(element: bs4.element.Tag) -> str:
     return link_text
 
 
-def create_driver() -> selenium.webdriver:
-    """Create browser driver
+def create_driver() -> undetected_chromedriver.Chrome:
+    """Create Selenium Chrome webdriver instance
 
-    Chrome is tried first. If it fails, Firefox is tried.
-
-    :rtype: selenium.webdriver
-    :returns: Selenium webdriver instance
+    :rtype: undetected_chromedriver.Chrome
+    :returns: undetected_chromedriver.Chrome
     """
 
-    os.environ["WDM_LOG_LEVEL"] = "0"
+    chrome_options = undetected_chromedriver.ChromeOptions()
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--disable-popup-blocking")
+    chrome_options.add_argument("--disable-notifications")
+    chrome_options.add_argument("--ignore-ssl-errors")
+    chrome_options.add_argument("--no-first-run")
+    chrome_options.add_argument("--no-service-autorun")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--no-sandbox")
 
-    try:
-        chrome_options = ChromeOptions()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        driver = get_webdriver_for("chrome", options=chrome_options)
+    driver_exe_path = _get_driver_exe_path()
 
-    except WebDriverException:
-        firefox_options = FirefoxOptions()
-        firefox_options.add_argument("--headless")
-        driver = get_webdriver_for("firefox", options=firefox_options)
+    driver = undetected_chromedriver.Chrome(
+        driver_executable_path=driver_exe_path if Path(driver_exe_path).exists() else None,
+        options=chrome_options,
+        headless=True,
+    )
 
     return driver
 
 
-def wait_for_element_to_load(
-    driver: selenium.webdriver, selector: str
-) -> BeautifulSoup:
+def _get_driver_exe_path() -> str:
+    """Get the path for the chromedriver executable to avoid downloading and patching each time
+
+    :rtype: str
+    :returns: Absoulute path of the chromedriver executable
+    """
+
+    platform = sys.platform
+    prefix = "undetected"
+    exe_name = "chromedriver%s"
+
+    if platform.endswith("win32"):
+        exe_name %= ".exe"
+    if platform.endswith(("linux", "linux2")):
+        exe_name %= ""
+    if platform.endswith("darwin"):
+        exe_name %= ""
+
+    if platform.endswith("win32"):
+        dirpath = "~/appdata/roaming/undetected_chromedriver"
+    elif "LAMBDA_TASK_ROOT" in os.environ:
+        dirpath = "/tmp/undetected_chromedriver"
+    elif platform.startswith(("linux", "linux2")):
+        dirpath = "~/.local/share/undetected_chromedriver"
+    elif platform.endswith("darwin"):
+        dirpath = "~/Library/Application Support/undetected_chromedriver"
+    else:
+        dirpath = "~/.undetected_chromedriver"
+
+    driver_exe_folder = os.path.abspath(os.path.expanduser(dirpath))
+    driver_exe_path = os.path.join(driver_exe_folder, "_".join([prefix, exe_name]))
+
+    return driver_exe_path
+
+
+def wait_for_element_to_load(driver: selenium.webdriver, selector: str) -> BeautifulSoup:
     """Wait for the element to load with the given selector
 
     Raises EksiReaderPageRequestError if timeout occurs while
@@ -272,9 +306,7 @@ def wait_for_element_to_load(
 
     try:
         wait = WebDriverWait(driver, timeout=5)
-        element_visible = wait.until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, selector))
-        )
+        element_visible = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, selector)))
 
         if element_visible:
             element = driver.find_elements(By.CSS_SELECTOR, selector)[-1]
@@ -282,9 +314,7 @@ def wait_for_element_to_load(
             return soup
 
     except TimeoutException as exp:
-        raise EksiReaderPageRequestError(
-            "Timed out waiting for element to load!"
-        ) from exp
+        raise EksiReaderPageRequestError("Timed out waiting for element to load!") from exp
 
 
 def click_load_more(driver: selenium.webdriver) -> None:
@@ -321,9 +351,7 @@ def close_cookie_dialog(driver: selenium.webdriver) -> None:
     """
 
     try:
-        cookie_dialog = driver.find_element(
-            By.CSS_SELECTOR, ".onetrust-close-btn-handler"
-        )
+        cookie_dialog = driver.find_element(By.CSS_SELECTOR, ".onetrust-close-btn-handler")
         cookie_dialog.click()
     except (NoSuchElementException, ElementNotInteractableException):
         pass

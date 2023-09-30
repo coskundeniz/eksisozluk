@@ -82,7 +82,7 @@ class Channel:
         """
 
         channels_page = parse_page(f"{PAGE_URL}/{self.link}?p={page_number}")
-        content_element = find_element_with_id("content", channels_page)
+        content_element = find_element_with_id("index-section", channels_page)
         title_elements = get_elements_with_css_selector("li > a", content_element)
 
         for element in title_elements:
@@ -95,9 +95,7 @@ class Channel:
                 entry_count_text = splitted_title_text[-1]
                 if "," in entry_count_text:
                     splitted_count = entry_count_text.split(",")
-                    entry_count = (
-                        int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
-                    )
+                    entry_count = int(splitted_count[0]) * 1000 + int(splitted_count[1][0]) * 100
                 else:
                     entry_count = int(entry_count_text)
             else:

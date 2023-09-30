@@ -120,9 +120,7 @@ class EksiReader:
             if channel.name == channel_name:
                 return channel
 
-        raise EksiReaderNoChannelError(
-            f"Could not found channel with name: {channel_name}"
-        )
+        raise EksiReaderNoChannelError(f"Could not found channel with name: {channel_name}")
 
     def get_channel_titles(self, channel: Channel) -> TitleGenerator:
         """Get all titles for the given channel
@@ -169,9 +167,7 @@ class EksiReader:
         for title in titles:
             self._get_title_entries(title, faventry_enabled)
 
-    def get_selected_entries(
-        self, title: Title, entry_indexes: Indexes
-    ) -> EntryGenerator:
+    def get_selected_entries(self, title: Title, entry_indexes: Indexes) -> EntryGenerator:
         """Get selected entries from title to add as favourites
 
         :type title: Title
@@ -202,9 +198,7 @@ class EksiReader:
         :param faventry_enabled: True if faventry option is passed, False otherwise
         """
 
-        with writer.console.status(
-            "[waitspinner]Getting entries from favourite titles..."
-        ):
+        with writer.console.status("[waitspinner]Getting entries from favourite titles..."):
             driver = create_driver()
 
         for item in title_storage.get_titles():
@@ -212,9 +206,7 @@ class EksiReader:
             link = f"{item['link']}?day={today}"
             title = Title(item["name"], link)
 
-            self._get_title_entries(
-                title, faventry_enabled, entries_for_today=True, driver=driver
-            )
+            self._get_title_entries(title, faventry_enabled, entries_for_today=True, driver=driver)
 
     def _get_title_entries(
         self,
@@ -253,9 +245,7 @@ class EksiReader:
                 selected_entry_indexes = self.get_selected_indexes(
                     prompt="⭐ Enter entry indexes to favourite"
                 )
-                selected_entries = self.get_selected_entries(
-                    title, selected_entry_indexes
-                )
+                selected_entries = self.get_selected_entries(title, selected_entry_indexes)
                 entry_storage.save(selected_entries)
 
             except EksiReaderMissingInputError:
@@ -317,9 +307,7 @@ class EksiReader:
 
         digit_len = len(str(index))
         entry_index_str = (
-            f"[indexbracket][[/]{index:{digit_len}}[indexbracket]][/] "
-            if faventry_enabled
-            else ""
+            f"[indexbracket][[/]{index:{digit_len}}[indexbracket]][/] " if faventry_enabled else ""
         )
 
         return entry_index_str
